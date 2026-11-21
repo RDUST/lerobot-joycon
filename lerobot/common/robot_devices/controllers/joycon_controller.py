@@ -25,7 +25,9 @@ class JoyConController:
         *args,
         **kwargs,
     ):
+    # init已经完成赋值
         self.name = name
+        # 拿着self再给self填值
         self.xml_path = "./lerobot/common/robot_devices/controllers/scene.xml"
         self.mjmodel = mujoco.MjModel.from_xml_path(self.xml_path)
         self.qpos_indices = np.array([self.mjmodel.jnt_qposadr[self.mjmodel.joint(n).id] for n in JOINT_NAMES])

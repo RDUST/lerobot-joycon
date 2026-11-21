@@ -320,7 +320,7 @@ def record(
             events["rerecord_episode"] = False
             events["exit_early"] = False
             dataset.clear_episode_buffer()
-            continue
+            continue 
 
         dataset.save_episode(task)
         recorded_episodes += 1

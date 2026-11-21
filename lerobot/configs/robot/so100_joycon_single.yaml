@@ -17,8 +17,12 @@ max_relative_target: null
 
 controllers:
   right:
-    _target_: lerobot.common.robot_devices.controllers.joycon_controller.JoyConController
+  #self.controllers 字典里的“键 (key)”
+    _target_: lerobot.common.robot_devices.controllers.joycon_controller.JoyConController 
+    # 用同一张图纸，造出【对象1】→ 作为第1次的 self
+
     name: right
+    # 传给手柄 JoyConController.__init__(self, name) 的参数
     # initial_position: [0.0, -3.14, 3.14, 0.0, 1.57, -0.157]
     
 follower_arms:
