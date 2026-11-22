@@ -1,0 +1,48 @@
+# SO-101 单从臂，右 Joy-Con 射线遥控，单相机录制
+_target_: lerobot.common.robot_devices.robots.manipulator.ManipulatorRobot
+robot_type: so101
+calibration_dir: .cache/calibration/so101
+max_relative_target: 5
+
+controllers:
+  right:  # 与 follower_arms.right 配对，决定这组目标发给哪台从臂
+    _target_: lerobot.common.robot_devices.controllers.joycon_ray_controller.JoyConRayController
+    name: right             # 选择蓝牙右手柄；可换左手柄，按键需一并调整
+    ray_length_m: 0.10       # 接管时从俯仰支点到工具点的虚拟距离（米）
+    advance_m_s: 0.06        # 摇杆前后推满时的速度（米/秒）
+    gyro_gain: [1, 1, 1]     # 顺序：滚转、俯仰、偏航。负号可反转单轴
+    stick_deadzone: 0.15     # 摇杆中位死区，按单侧量程的比例
+    gripper_open_pct: 60     # 夹爪张开目标，占标定行程的百分比
+    mouse_buttons: {}        # 可选电脑鼠标映射，如 {left: close, right: open}；按住运动键时生效
+    buttons:
+      motion: R             # 按住接管，松开冻结运动目标
+      gripper: ZR           # 单击切换夹爪开合
+      save: A               # 录制中保存当前片段
+      retry: Y              # 录制中重录当前片段
+
+follower_arms:
+  right:
+    _target_: lerobot.common.robot_devices.motors.feetech.FeetechMotorsBus
+    port: /dev/lerobot_right  # Windows 改成本机实际串口，如 COM7
+    motors:
+      shoulder_pan: [1, "sts3215"]
+      shoulder_lift: [2, "sts3215"]
+      elbow_flex: [3, "sts3215"]
+      wrist_flex: [4, "sts3215"]
+      wrist_roll: [5, "sts3215"]
+      gripper: [6, "sts3215"]
+
+cameras:
+  right:  # 数据集字段 observation.images.right
+    _target_: lerobot.common.robot_devices.cameras.opencv.OpenCVCamera
+    camera_index: 2  # 改成本机相机编号
+    fps: 30
+    width: 640
+    height: 480
+  # 第二台相机接好后可取消以下注释
+  # head:
+  #   _target_: lerobot.common.robot_devices.cameras.opencv.OpenCVCamera
+  #   camera_index: 1
+  #   fps: 30
+  #   width: 640
+  #   height: 480

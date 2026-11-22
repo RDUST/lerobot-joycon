@@ -158,6 +158,34 @@ python lerobot/scripts/control_robot.py teleoperate \
 
 &nbsp;
 
+#### (3) 射线模式：用手柄瞄准夹爪工具点
+
+射线模式适用于一代 Joy-Con 和单台 SO-101 从臂。六个电机、手柄按键和录制相机均在 [so101_joycon_ray.yaml](lerobot/configs/robot/so101_joycon_ray.yaml) 中配置。
+
+先在所选 YAML 中填写 `follower_arms.right.port`（Windows 填实际 COM 号）和 `cameras.right.camera_index`。相机默认沿用单臂示例的编号 2、640 × 480、30 fps。配对手柄后，从仓库根目录运行以下 SO-101 示例。
+
+```shell
+python -m pip install hidapi "mujoco>=3.2" scipy
+python -m lerobot.scripts.control_robot teleoperate --robot-path lerobot/configs/robot/so101_joycon_ray.yaml --fps 30 --display-cameras 1
+```
+
+**SO-101 首次接入**会在缺少 `.cache/calibration/so101/right_follower.json` 时引导手动标定。此分支使用水平伸直零位。先让底座正对前方，臂和夹爪水平伸直、活动爪朝上、夹爪闭合；再按终端提示摆旋转姿态。从上方看底座顺时针转 90°，上臂抬起、前臂前伸、夹爪朝下；从手腕沿夹爪朝指尖看，腕部顺时针拧 90°，夹爪张开。最后托住机械臂，放回休息姿态。使用本机按此流程生成的标定。新版 LeRobot 的关节中点标定文件和旧 SO-100 的文件均不适用。[SO-101 模型的两种零位](https://github.com/TheRobotStudio/SO-ARM100/blob/main/Simulation/SO101/README.md) · [标定姿态图片](https://huggingface.co/docs/lerobot/main/assemble_so101#manual-calibration-of-follower-arm)
+
+下例在新的本地目录录制一条 10 秒的数据，保存右相机图像 `observation.images.right`、六维关节状态 `observation.state` 和六维动作 `action`。`--video 0` 会把图像逐帧存入 Parquet。若希望生成 MP4，使用含 `libsvtav1` 编码器的 FFmpeg，确认 `ffmpeg` 和 `ffprobe` 均可从终端运行，再用 `--video 1` 和新的数据集目录录制。`--display-cameras 0` 只关闭预览。`--robot-overrides "~cameras"` 会移除图像通道，仅用于无相机试机。
+
+```shell
+python -m lerobot.scripts.control_robot record --robot-path lerobot/configs/robot/so101_joycon_ray.yaml --fps 30 --single-task "pick and place" --root datasets/so101_ray_first --repo-id local/so101_ray_first --num-episodes 1 --episode-time-s 10 --video 0 --push-to-hub 0 --local-files-only 1
+```
+
+1. 启动时松开按键和摇杆，把手柄静置约一秒，等待终端显示 `Joy-Con ready`。
+2. 右手柄按键面朝上，肩键端朝前。按住 **R** 从机械臂当前姿态接管。左右扫动时工具点绕底座横摆；抬高或压低手柄前端时，工具点绕夹爪后方的虚拟支点上下摆动。
+3. 保持按住 **R**，前推或后拉摇杆，工具点沿当前夹爪指向前进或后退。摇杆横向留空。像拧螺丝刀一样绕手柄长轴转动，控制腕部滚转。模型工具点在腕部滚转轴上，与最前端指垫等深。
+4. 松开 **R** 即冻结运动目标，可调整握姿，再按住 **R** 继续。**ZR** 单击切换夹爪开合。录制中 **A** 保存本条并进入下一条，**Y** 重录本条。
+
+在所选射线 YAML 中可改按键、三轴增益、摇杆速度、死区和张开行程。默认满杆速度为 6 cm/s。换用左手柄控制同一台从臂时，保留外层 `controllers.right`，把内层 `name` 改成 `left`，并把四个按键依次改成 `L`、`ZL`、`Right`、`Left`。
+
+电脑鼠标映射默认关闭。需要时把 YAML 改为 `mouse_buttons: {left: close, right: open}`。在带桌面的系统中按住运动键，即可用鼠标左键闭合、右键张开夹爪；监听在系统范围内生效。鼠标输入使用本项目 `feetech` 扩展自带的 `pynput`。
+
 ## (四)JoyCon手柄数据集采集
 
 ### 1. 进行带相机图像的可视化遥操（插上相机）

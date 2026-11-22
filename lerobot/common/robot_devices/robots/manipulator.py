@@ -82,7 +82,7 @@ class ManipulatorRobotConfig:
         super().__setattr__(prop, val)
 
     def __post_init__(self):
-        if self.robot_type not in ["koch", "koch_bimanual", "aloha", "so100", "moss"]:
+        if self.robot_type not in ["koch", "koch_bimanual", "aloha", "so100", "so101", "moss"]:
             raise ValueError(f"Provided robot type ({self.robot_type}) is not supported.")
 
 
@@ -320,7 +320,7 @@ class ManipulatorRobot:
 
         if self.robot_type in ["koch", "koch_bimanual", "aloha"]:
             from lerobot.common.robot_devices.motors.dynamixel import TorqueMode
-        elif self.robot_type in ["so100", "moss"]:
+        elif self.robot_type in ["so100", "so101", "moss"]:
             from lerobot.common.robot_devices.motors.feetech import TorqueMode
 
         # We assume that at connection time, arms are in a rest position, and torque can
@@ -339,6 +339,9 @@ class ManipulatorRobot:
             self.set_aloha_robot_preset()
         elif self.robot_type in ["so100", "moss"]:
             self.set_so100_robot_preset()
+        elif self.robot_type == "so101":
+            for arm in self.follower_arms.values():
+                arm.write("Mode", 0)  # STS3215 position control
 
         # Enable torque on all motors of the follower arms
         for name in self.follower_arms:
@@ -390,7 +393,7 @@ class ManipulatorRobot:
 
                     calibration = run_arm_calibration(arm, self.robot_type, name, arm_type)
 
-                elif self.robot_type in ["so100", "moss"]:
+                elif self.robot_type in ["so100", "so101", "moss"]:
                     from lerobot.common.robot_devices.robots.feetech_calibration import (
                         run_arm_manual_calibration,
                     )
@@ -740,6 +743,11 @@ class ManipulatorRobot:
 
         for name in self.cameras:
             self.cameras[name].disconnect()
+
+        for controller in (self.controllers or {}).values():
+            close = getattr(controller, "close", None)
+            if close is not None:
+                close()
 
         self.is_connected = False
 

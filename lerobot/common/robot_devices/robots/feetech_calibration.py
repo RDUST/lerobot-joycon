@@ -425,8 +425,12 @@ def run_arm_manual_calibration(arm: MotorsBus, robot_type: str, arm_name: str, a
 
     print(f"\nRunning calibration of {robot_type} {arm_name} {arm_type}...")
 
+    pose_url = URL_TEMPLATE
+    if robot_type == "so101":
+        pose_url = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/lerobot/{arm}_{position}.webp"
+        print("SO-101 horizontal-zero calibration: extend the links forward, moving jaw up, gripper closed.")
     print("\nMove arm to zero position")
-    print("See: " + URL_TEMPLATE.format(robot=robot_type, arm=arm_type, position="zero"))
+    print("See: " + pose_url.format(robot=robot_type, arm=arm_type, position="zero"))
     input("Press Enter to continue...")
 
     # We arbitrarily chose our zero target position to be a straight horizontal position with gripper upwards and closed.
@@ -446,7 +450,11 @@ def run_arm_manual_calibration(arm: MotorsBus, robot_type: str, arm_name: str, a
     # corresponds to opening the gripper. When the rotation direction is ambiguous, we arbitrarely rotate clockwise from the point of view
     # of the previous motor in the kinetic chain.
     print("\nMove arm to rotated target position")
-    print("See: " + URL_TEMPLATE.format(robot=robot_type, arm=arm_type, position="rotated"))
+    print("See: " + pose_url.format(robot=robot_type, arm=arm_type, position="rotated"))
+    if robot_type == "so101":
+        print("From zero: pan 90 deg clockwise viewed from above, raise upper arm, bend elbow forwards,")
+        print("point the wrist down. Twist the wrist 90 deg clockwise looking from wrist toward tips,")
+        print("then open the jaw fully. Support the arm while positioning it.")
     input("Press Enter to continue...")
 
     rotated_target_pos = convert_degrees_to_steps(ROTATED_POSITION_DEGREE, arm.motor_models)
@@ -457,11 +465,19 @@ def run_arm_manual_calibration(arm: MotorsBus, robot_type: str, arm_name: str, a
     drive_mode = (rotated_pos < zero_pos).astype(np.int32)
 
     # Re-compute homing offset to take into account drive mode
-    rotated_drived_pos = apply_drive_mode(rotated_pos, drive_mode)
-    homing_offset = rotated_target_pos - rotated_drived_pos
+    if robot_type == "so101":
+        # 以实测的水平伸直姿态为零位。第二次读数用于判断各编码器的正负方向，夹爪行程保留原始计数。
+        travel = np.abs(rotated_pos - zero_pos)
+        joint_mask = np.array([name != "gripper" for name in arm.motor_names])
+        if np.any(travel[joint_mask] < rotated_target_pos[joint_mask] / 2) or np.any(travel == 0):
+            raise ValueError("SO-101 calibration: check the quarter-turn pose and fully open the gripper.")
+        homing_offset = zero_target_pos - apply_drive_mode(zero_pos.copy(), drive_mode)
+    else:
+        rotated_drived_pos = apply_drive_mode(rotated_pos, drive_mode)
+        homing_offset = rotated_target_pos - rotated_drived_pos
 
     print("\nMove arm to rest position")
-    print("See: " + URL_TEMPLATE.format(robot=robot_type, arm=arm_type, position="rest"))
+    print("See: " + pose_url.format(robot=robot_type, arm=arm_type, position="rest"))
     input("Press Enter to continue...")
     print()
 

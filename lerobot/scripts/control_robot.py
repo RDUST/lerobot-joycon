@@ -468,6 +468,14 @@ if __name__ == "__main__":
     )
     parser_record.add_argument("--num-episodes", type=int, default=50, help="Number of episodes to record.")
     parser_record.add_argument(
+        "--video", type=int, choices=(0, 1), default=1,
+        help="Store camera frames in MP4 (1) or embed individual images in Parquet (0).",
+    )
+    parser_record.add_argument(
+        "--display-cameras", type=int, choices=(0, 1), default=1,
+        help="Display the camera preview during recording. Frames are saved in both modes.",
+    )
+    parser_record.add_argument(
         "--run-compute-stats",
         type=int,
         default=1,
